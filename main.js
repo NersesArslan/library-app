@@ -31,12 +31,37 @@ const LibraryManager = {
       deleteBtn.addEventListener("click", () => {
         this.deleteBook(book.id);
       });
-
+      bookElement.addEventListener("click", () => {
+        location.hash = book.id;
+      });
       bookElement.appendChild(deleteBtn);
       output.appendChild(bookElement);
     });
   },
 };
+
+window.addEventListener("hashchange", () => {
+  const bookId = location.hash.slice(1);
+  if (!bookId) {
+    LibraryManager.render(); // back to full list
+    return;
+  }
+
+  const book = LibraryManager.books.find((b) => b.id === bookId);
+  if (book) {
+    renderBookDetail(book);
+  }
+});
+
+window.addEventListener("load", () => {
+  if (location.hash) {
+    const bookId = location.hash.slice(1);
+    const book = LibraryManager.books.find((b) => b.id === bookId);
+    if (book) {
+      renderBookDetail(book);
+    }
+  }
+});
 
 function processFormData(formElement) {
   const formData = new FormData(formElement);
@@ -58,9 +83,42 @@ function initUI(formElement, toggleButton) {
 
   formElement.addEventListener("submit", (e) => {
     e.preventDefault();
+
+    const titleInput = formElement.querySelector("#title");
+    const authorInput = formElement.querySelector("#author");
+
+    const title = titleInput.value.trim();
+    const author = authorInput.value.trim();
+
+    if (!title || !author) {
+      alert("Please fill in both title and author fields.");
+      return;
+    }
+
     processFormData(formElement);
   });
 }
+
+window.addEventListener("hashchange", () => {
+  const bookId = location.hash.slice(1);
+  const book = LibraryManager.books.find((b) => b.id === bookId);
+  if (book) renderBookDetail(book);
+});
+
+function renderBookDetail(book) {
+  output.innerHTML = `
+    <div class="book-detail">
+      <h2>${book.title}</h2>
+      <p><strong>Author:</strong> ${book.author}</p>
+      <button onclick="location.hash = ''">Back</button>
+    </div>
+  `;
+
+  document.getElementById("backButton").addEventListener("click", () => {
+    location.hash = ""; // triggers hashchange
+  });
+}
+
 const showFormButton = document.getElementById("showFormButton");
 const myForm = document.getElementById("myForm");
 
