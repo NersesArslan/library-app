@@ -1,54 +1,71 @@
-const myLibrary = [];
-
 function Book(title, author) {
   this.title = title;
   this.author = author;
   this.id = crypto.randomUUID();
 }
 
-function addBookToLibrary(title, author) {
-  const book = new Book(title, author);
-  return myLibrary.push(book);
+const LibraryManager = {
+  books: [],
+
+  addBook(title, author) {
+    const book = new Book(title, author);
+    this.books.push(book);
+    this.render();
+  },
+
+  deleteBook(id) {
+    this.books = this.books.filter((book) => book.id !== id);
+    this.render();
+  },
+
+  render() {
+    output.innerHTML = "";
+    this.books.forEach((book) => {
+      const bookElement = document.createElement("div");
+      bookElement.classList.add("book");
+      bookElement.textContent = `${book.title} by ${book.author}`;
+
+      const deleteBtn = document.createElement("button");
+      deleteBtn.classList.add("delete-btn");
+      deleteBtn.textContent = "x";
+      deleteBtn.addEventListener("click", () => {
+        this.deleteBook(book.id);
+      });
+
+      bookElement.appendChild(deleteBtn);
+      output.appendChild(bookElement);
+    });
+  },
+};
+
+function processFormData(formElement) {
+  const formData = new FormData(formElement);
+  const data = Object.fromEntries(formData.entries());
+  LibraryManager.addBook(data.title, data.author);
+  formElement.reset();
 }
 
-addBookToLibrary("Madame Bovary", "Gustave Flaubert");
-addBookToLibrary("Ulysses", "James Joyce");
-addBookToLibrary("The Autobiography of Malcom X", "Alex Hailey");
+function toggleFormVisibility(formElement, toggleButton) {
+  const isHidden = formElement.style.display === "none";
+  formElement.style.display = isHidden ? "block" : "none";
+  toggleButton.innerHTML = isHidden ? "Close Form" : "Show Form";
+}
 
-const output = document.getElementById("output");
+function initUI(formElement, toggleButton) {
+  toggleButton.addEventListener("click", () => {
+    toggleFormVisibility(formElement, toggleButton);
+  });
 
-function displayLibrary(array) {
-  output.innerHTML = "";
-  array.forEach((book) => {
-    const newBookElemenmt = document.createElement("div");
-    newBookElemenmt.classList.add("book");
-    newBookElemenmt.textContent = `${book.title} by ${book.author}`;
-
-    output.appendChild(newBookElemenmt);
+  formElement.addEventListener("submit", (e) => {
+    e.preventDefault();
+    processFormData(formElement);
   });
 }
-
 const showFormButton = document.getElementById("showFormButton");
 const myForm = document.getElementById("myForm");
 
-myForm.addEventListener("submit", (e) => {
-  e.preventDefault();
+LibraryManager.addBook("Madame Bovary", "Gustave Flaubert");
+LibraryManager.addBook("Ulysses", "James Joyce");
+LibraryManager.addBook("The Autobiography of Malcom X", "Alex Hailey");
 
-  const formData = new FormData(myForm);
-  const data = Object.fromEntries(formData.entries());
-
-  addBookToLibrary(data.title, data.author);
-  displayLibrary(myLibrary);
-});
-
-showFormButton.addEventListener("click", () => {
-  if (myForm.style.display === "none") {
-    myForm.style.display = "block";
-    showFormButton.innerHTML = "Close Form";
-  } else {
-    myForm.style.display = "none";
-    showFormButton.innerHTML = "Show Form";
-  }
-});
-
-displayLibrary(myLibrary);
+initUI(myForm, showFormButton);
