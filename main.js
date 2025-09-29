@@ -3,19 +3,32 @@ function Book(title, author) {
   this.author = author;
   this.id = crypto.randomUUID();
 }
+// === UI Rendering ===
+
+function createBookDetailElement(book) {
+  const container = document.createElement("div");
+  container.classList.add("book-detail");
+
+  const title = document.createElement("h2");
+  title.textContent = book.title;
+
+  const author = document.createElement("p");
+  author.innerHTML = `<strong>Author:</strong> ${book.author}`;
+
+  const backButton = document.createElement("button");
+  backButton.textContent = "Back";
+  backButton.addEventListener("click", () => {
+    location.hash = "";
+  });
+
+  container.append(title, author, backButton);
+  return container;
+}
 
 function renderBookDetail(book) {
-  output.innerHTML = `
-    <div class="book-detail">
-      <h2>${book.title}</h2>
-      <p><strong>Author:</strong> ${book.author}</p>
-      <button onclick="location.hash = ''">Back</button>
-    </div>
-  `;
-
-  document.getElementById("backButton").addEventListener("click", () => {
-    location.hash = ""; // triggers hashchange
-  });
+  const detailElement = createBookDetailElement(book);
+  output.innerHTML = "";
+  output.appendChild(detailElement);
 }
 
 function render(books, deleteCallback) {
@@ -39,6 +52,8 @@ function render(books, deleteCallback) {
   });
 }
 
+// === Library Logic ===
+
 const LibraryManager = {
   books: [],
 
@@ -57,23 +72,16 @@ const LibraryManager = {
 window.addEventListener("hashchange", () => {
   const bookId = location.hash.slice(1);
   if (!bookId) {
-    LibraryManager.render(); // back to full list
+    render(
+      LibraryManager.books,
+      LibraryManager.deleteBook.bind(LibraryManager)
+    );
     return;
   }
 
   const book = LibraryManager.books.find((b) => b.id === bookId);
   if (book) {
     renderBookDetail(book);
-  }
-});
-
-window.addEventListener("load", () => {
-  if (location.hash) {
-    const bookId = location.hash.slice(1);
-    const book = LibraryManager.books.find((b) => b.id === bookId);
-    if (book) {
-      renderBookDetail(book);
-    }
   }
 });
 
@@ -95,6 +103,18 @@ function initUI(formElement, toggleButton) {
     toggleFormVisibility(formElement, toggleButton);
   });
 
+  // === Event Listeners ===
+
+  window.addEventListener("load", () => {
+    if (location.hash) {
+      const bookId = location.hash.slice(1);
+      const book = LibraryManager.books.find((b) => b.id === bookId);
+      if (book) {
+        renderBookDetail(book);
+      }
+    }
+  });
+
   formElement.addEventListener("submit", (e) => {
     e.preventDefault();
 
@@ -112,12 +132,6 @@ function initUI(formElement, toggleButton) {
     processFormData(formElement);
   });
 }
-
-window.addEventListener("hashchange", () => {
-  const bookId = location.hash.slice(1);
-  const book = LibraryManager.books.find((b) => b.id === bookId);
-  if (book) renderBookDetail(book);
-});
 
 const showFormButton = document.getElementById("showFormButton");
 const myForm = document.getElementById("myForm");
