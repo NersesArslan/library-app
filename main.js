@@ -4,39 +4,53 @@ function Book(title, author) {
   this.id = crypto.randomUUID();
 }
 
+function renderBookDetail(book) {
+  output.innerHTML = `
+    <div class="book-detail">
+      <h2>${book.title}</h2>
+      <p><strong>Author:</strong> ${book.author}</p>
+      <button onclick="location.hash = ''">Back</button>
+    </div>
+  `;
+
+  document.getElementById("backButton").addEventListener("click", () => {
+    location.hash = ""; // triggers hashchange
+  });
+}
+
+function render(books, deleteCallback) {
+  output.innerHTML = "";
+  books.forEach((book) => {
+    const bookElement = document.createElement("div");
+    bookElement.classList.add("book");
+    bookElement.textContent = `${book.title} by ${book.author}`;
+
+    const deleteBtn = document.createElement("button");
+    deleteBtn.classList.add("delete-btn");
+    deleteBtn.textContent = "x";
+    deleteBtn.addEventListener("click", () => {
+      deleteCallback(book.id);
+    });
+    bookElement.addEventListener("click", () => {
+      location.hash = book.id;
+    });
+    bookElement.appendChild(deleteBtn);
+    output.appendChild(bookElement);
+  });
+}
+
 const LibraryManager = {
   books: [],
 
   addBook(title, author) {
     const book = new Book(title, author);
     this.books.push(book);
-    this.render();
+    render(this.books, this.deleteBook.bind(this));
   },
 
   deleteBook(id) {
     this.books = this.books.filter((book) => book.id !== id);
-    this.render();
-  },
-
-  render() {
-    output.innerHTML = "";
-    this.books.forEach((book) => {
-      const bookElement = document.createElement("div");
-      bookElement.classList.add("book");
-      bookElement.textContent = `${book.title} by ${book.author}`;
-
-      const deleteBtn = document.createElement("button");
-      deleteBtn.classList.add("delete-btn");
-      deleteBtn.textContent = "x";
-      deleteBtn.addEventListener("click", () => {
-        this.deleteBook(book.id);
-      });
-      bookElement.addEventListener("click", () => {
-        location.hash = book.id;
-      });
-      bookElement.appendChild(deleteBtn);
-      output.appendChild(bookElement);
-    });
+    render(this.books, this.deleteBook.bind(this));
   },
 };
 
@@ -104,20 +118,6 @@ window.addEventListener("hashchange", () => {
   const book = LibraryManager.books.find((b) => b.id === bookId);
   if (book) renderBookDetail(book);
 });
-
-function renderBookDetail(book) {
-  output.innerHTML = `
-    <div class="book-detail">
-      <h2>${book.title}</h2>
-      <p><strong>Author:</strong> ${book.author}</p>
-      <button onclick="location.hash = ''">Back</button>
-    </div>
-  `;
-
-  document.getElementById("backButton").addEventListener("click", () => {
-    location.hash = ""; // triggers hashchange
-  });
-}
 
 const showFormButton = document.getElementById("showFormButton");
 const myForm = document.getElementById("myForm");
