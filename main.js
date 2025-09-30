@@ -1,9 +1,24 @@
+const output = document.getElementById("output");
+const showFormButton = document.getElementById("showFormButton");
+const myForm = document.getElementById("myForm");
+
+//Models
+
 function Book(title, author) {
   this.title = title;
   this.author = author;
   this.id = crypto.randomUUID();
 }
 // === UI Rendering ===
+
+function hideFormAndToggleButton() {
+  if (myForm) myForm.style.display = "none";
+  if (showFormButton) showFormButton.style.display = "none";
+}
+
+function showToggleButton() {
+  if (showFormButton) showFormButton.style.display = ""; // restore default display
+}
 
 function createBookDetailElement(book) {
   const container = document.createElement("div");
@@ -27,11 +42,17 @@ function createBookDetailElement(book) {
 
 function renderBookDetail(book) {
   const detailElement = createBookDetailElement(book);
+  // hide the form and its toggle when viewing a detail
+  hideFormAndToggleButton();
+
   output.innerHTML = "";
   output.appendChild(detailElement);
 }
 
 function render(books, deleteCallback) {
+  // ensure the toggle button is visible in list view
+  showToggleButton();
+
   output.innerHTML = "";
   books.forEach((book) => {
     const bookElement = document.createElement("div");
@@ -93,9 +114,13 @@ function processFormData(formElement) {
 }
 
 function toggleFormVisibility(formElement, toggleButton) {
-  const isHidden = formElement.style.display === "none";
-  formElement.style.display = isHidden ? "block" : "none";
-  toggleButton.innerHTML = isHidden ? "Close Form" : "Show Form";
+  // Toggle the hidden class
+  const nowHidden = formElement.classList.toggle("hidden");
+
+  // Update button label and ARIA state
+  toggleButton.innerHTML = nowHidden ? "Show Form" : "Close Form";
+  toggleButton.setAttribute("aria-expanded", String(!nowHidden));
+  formElement.setAttribute("aria-hidden", String(nowHidden));
 }
 
 function initUI(formElement, toggleButton) {
@@ -133,11 +158,11 @@ function initUI(formElement, toggleButton) {
   });
 }
 
-const showFormButton = document.getElementById("showFormButton");
-const myForm = document.getElementById("myForm");
-
-LibraryManager.addBook("Madame Bovary", "Gustave Flaubert");
-LibraryManager.addBook("Ulysses", "James Joyce");
-LibraryManager.addBook("The Autobiography of Malcom X", "Alex Hailey");
+function seedLibrary() {
+  LibraryManager.addBook("Madame Bovary", "Gustave Flaubert");
+  LibraryManager.addBook("Ulysses", "James Joyce");
+  LibraryManager.addBook("The Autobiography of Malcom X", "Alex Hailey");
+}
+seedLibrary();
 
 initUI(myForm, showFormButton);

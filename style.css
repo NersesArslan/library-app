@@ -1,7 +1,7 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: 50px;
+  gap: 40px;
   align-items: center;
 }
 
@@ -18,45 +18,77 @@
   border-radius: 8px;
   padding: 20px 24px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
-  width: 300px;
+  width: 100%;
+  max-width: 450px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   font-family: sans-serif;
 }
 
+.hidden {
+  display: none !important; /* !important ensures it hides even if inline styles exist */
+}
+
 #myForm label {
-  font-weight: bold;
-  margin-bottom: 4px;
-  color: #333;
-}
-
-#myForm input[type="text"] {
-  padding: 8px 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px; /* more breathing room between label and input */
+  color: #222;
   font-size: 14px;
-  transition: border-color 0.2s ease;
 }
 
-#myForm input[type="text"]:focus {
-  border-color: #0077cc;
+#myForm label:not(:first-of-type) {
+  margin-top: 8px;
+}
+
+#myForm input[type="text"],
+#myForm input[type="submit"],
+#myForm input[type="number"],
+#myForm textarea {
+  padding: 10px 12px;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  width: 100%;
+  max-width: 360px; /* avoid overly wide inputs */
+  box-sizing: border-box;
+  background: #fff;
+  justify-content: center;
+  margin-bottom: 12px; /* space below each input so the next label isn't touching */
+}
+
+#myForm input[type="text"]:focus,
+#myForm input[type="number"]:focus,
+#myForm textarea:focus {
+  border-color: #2b7ed7;
+  box-shadow: 0 4px 12px rgba(43, 126, 215, 0.12);
   outline: none;
 }
 
+#myForm textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
 #myForm input[type="submit"] {
-  background-color: #0077cc;
+  background-color: #2b7ed7;
   color: white;
   border: none;
-  padding: 10px;
-  font-weight: bold;
-  border-radius: 4px;
+  padding: 10px 14px;
+  font-weight: 700;
+  border-radius: 10px;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: transform 0.06s ease, background-color 0.12s ease,
+    box-shadow 0.12s ease;
+  box-shadow: 0 6px 14px rgba(43, 126, 215, 0.12);
+  margin: auto;
 }
 
 #myForm input[type="submit"]:hover {
-  background-color: #005fa3;
+  background-color: #2266b3;
+  transform: translateY(-1px);
 }
 
 .book {
@@ -70,8 +102,8 @@
   border-radius: 6px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   width: 100%;
-  max-width: 400px;
-  min-width: 400px; /* 👈 This ensures consistent width */
+  max-width: 680px;
+  /* remove fixed min-width so cards are responsive */
   box-sizing: border-box;
   word-break: break-word;
   white-space: normal;
@@ -84,4 +116,28 @@
 .book .delete-btn {
   margin-left: 12px;
   flex-shrink: 0;
+  background: #ff6b6b;
+  color: #fff;
+  border: none;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.book .delete-btn:hover {
+  background: #e05555;
+}
+/* small layout tweaks for mobile */
+@media (max-width: 480px) {
+  .container {
+    padding: 16px;
+  }
+  #myForm {
+    max-width: 100%;
+  }
+  .book {
+    max-width: 100%;
+    padding: 10px 12px;
+  }
 }
