@@ -33,11 +33,17 @@ const myForm = document.querySelector("#myForm");
 const output = document.querySelector("#output");
 // Book class. Creates book objects
 class Book {
-  constructor(title, author) {
-    this.title = title;
-    this.author = author;
+  constructor(bookData) {
+    this.title = bookData.title;
+    this.author = bookData.author;
     this.id = crypto.randomUUID();
     this.comments = []; // Array to store comments/passages
+    this.thumbnail = bookData.thumbnail || null;
+    this.description = bookData.description || "";
+    this.publishedDate = bookData.publishedDate || "";
+    this.pageCount = bookData.pageCount || null;
+    this.categories = bookData.categories || [];
+    this.isbn = bookData.isbn || null;
   }
 
   addComment(text, page = "", type = "note") {
@@ -70,6 +76,85 @@ class LibraryManager {
     this.books = [];
     this.router = new Router();
     this.setupRoutes();
+    this.setupSearchHandler();
+  }
+
+  async searchBooks(query) {
+    const response = await fetch(
+      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(
+        query
+      )}`
+    );
+    const data = await response.json();
+    return data.items ? data.items.map(this.formatBookData) : [];
+  }
+
+  formatBookData(bookData) {
+    const volumeInfo = bookData.volumeInfo;
+    return {
+      title: volumeInfo.title,
+      author: volumeInfo.authors
+        ? volumeInfo.authors.join(", ")
+        : "Unknown Author",
+      thumbnail: volumeInfo.imageLinks ? volumeInfo.imageLinks.thumbnail : null,
+      description: volumeInfo.description,
+      publishedDate: volumeInfo.publishedDate,
+      pageCount: volumeInfo.pageCount,
+      categories: volumeInfo.categories,
+      isbn: volumeInfo.industryIdentifiers
+        ? volumeInfo.industryIdentifiers.find((id) => id.type === "ISBN_13")
+            ?.identifier
+        : null,
+    };
+  }
+
+  displaySearchResults(results) {
+    const searchResults = document.getElementById("searchResults");
+    searchResults.innerHTML = "";
+
+    results.forEach((bookData) => {
+      const resultElement = document.createElement("div");
+      resultElement.classList.add("search-result");
+
+      resultElement.innerHTML = `
+        <div class="book-preview">
+          ${
+            bookData.thumbnail
+              ? `<img src="${bookData.thumbnail}" alt="${bookData.title} cover">`
+              : ""
+          }
+          <div class="book-info">
+            <h3>${bookData.title}</h3>
+            <p>by ${bookData.author}</p>
+            ${
+              bookData.publishedDate
+                ? `<p>Published: ${bookData.publishedDate}</p>`
+                : ""
+            }
+          </div>
+        </div>
+        <button class="add-book-btn">Add to Library</button>
+      `;
+
+      const addButton = resultElement.querySelector(".add-book-btn");
+      addButton.addEventListener("click", () => this.addBook(bookData));
+
+      searchResults.appendChild(resultElement);
+    });
+  }
+
+  setupSearchHandler() {
+    const searchForm = document.getElementById("searchForm");
+    const searchInput = document.getElementById("searchInput");
+
+    searchForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const query = searchInput.value.trim();
+      if (query) {
+        const results = await this.searchBooks(query);
+        this.displaySearchResults(results);
+      }
+    });
   }
 
   setupRoutes() {
@@ -462,14 +547,3 @@ class LibraryManager {
 
 // Create an instance of LibraryManager
 const library = new LibraryManager();
-
-myForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  const titleValue = document.querySelector("#title").value.trim();
-  const authorValue = document.querySelector("#author").value.trim();
-
-  if (titleValue && authorValue) {
-    library.addBook(titleValue, authorValue);
-    myForm.reset();
-  }
-});
