@@ -29,7 +29,6 @@ class Router {
   }
 }
 
-const myForm = document.querySelector("#myForm");
 const output = document.querySelector("#output");
 // Book class. Creates book objects
 class Book {
@@ -166,8 +165,8 @@ class LibraryManager {
     this.router.handleRoute(hash);
   }
 
-  addBook(title, author) {
-    const book = new Book(title, author);
+  addBook(bookData) {
+    const book = new Book(bookData);
     this.books.push(book);
     this.renderLibraryView();
     console.log(this.books);
@@ -520,7 +519,8 @@ class LibraryManager {
     const libraryContainer = document.createElement("div");
     libraryContainer.classList.add("library-container");
 
-    myForm.classList.remove("hidden");
+    // Show search form in library view
+    document.querySelector(".search-container").classList.remove("hidden");
 
     this.books.forEach((book) => {
       const bookPreview = this.createBookPreview(book);
@@ -538,7 +538,8 @@ class LibraryManager {
     }
 
     output.innerHTML = "";
-    myForm.classList.add("hidden");
+    // Hide search form in book detail view
+    document.querySelector(".search-container").classList.add("hidden");
 
     const detailView = this.createDetailView(book);
     output.appendChild(detailView);
