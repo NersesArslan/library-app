@@ -1,35 +1,4 @@
-// Simple router for handling page navigation
-class Router {
-  constructor() {
-    this.routes = {};
-    this.currentView = null;
-
-    // Handle hash changes
-    window.addEventListener("hashchange", () => {
-      this.handleRoute(window.location.hash);
-    });
-  }
-
-  addRoute(path, handler) {
-    this.routes[path] = handler;
-  }
-
-  handleRoute(hash) {
-    if (hash.startsWith("#book-")) {
-      const bookId = hash.replace("#book-", "");
-      this.routes["#book"](bookId);
-    } else {
-      const handler = this.routes[hash] || this.routes["#library"];
-      handler();
-    }
-  }
-
-  navigate(path) {
-    window.location.hash = path;
-  }
-}
-
-const output = document.querySelector("#output");
+import { Router } from "./js/router.js";
 // Book class. Creates book objects
 class Book {
   constructor(bookData) {
@@ -109,6 +78,11 @@ class LibraryManager {
 
   displaySearchResults(results) {
     const searchResults = document.getElementById("searchResults");
+    if (!searchResults) {
+      console.error("displaySearchResults: #searchResults element not found");
+      return;
+    }
+    console.debug(`displaySearchResults: rendering ${results.length} results`);
     searchResults.innerHTML = "";
 
     results.forEach((bookData) => {
@@ -132,26 +106,53 @@ class LibraryManager {
             }
           </div>
         </div>
-        <button class="add-book-btn">Add to Library</button>
+        <button type="button" class="add-book-btn">Add to Library</button>
       `;
 
       const addButton = resultElement.querySelector(".add-book-btn");
-      addButton.addEventListener("click", () => this.addBook(bookData));
+      addButton.addEventListener("click", () => {
+        console.debug(
+          "displaySearchResults: addButton clicked for",
+          bookData.title
+        );
+        this.addBook(bookData);
+      });
 
       searchResults.appendChild(resultElement);
+      console.debug(
+        `displaySearchResults: appended result for ${bookData.title}`
+      );
     });
   }
 
   setupSearchHandler() {
+    console.debug("setupSearchHandler: initializing");
     const searchForm = document.getElementById("searchForm");
     const searchInput = document.getElementById("searchInput");
+
+    if (!searchForm) {
+      console.error("setupSearchHandler: #searchForm not found");
+      return;
+    }
+    if (!searchInput) {
+      console.error("setupSearchHandler: #searchInput not found");
+      return;
+    }
 
     searchForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const query = searchInput.value.trim();
+      console.debug(`setupSearchHandler: submit with query='${query}'`);
       if (query) {
-        const results = await this.searchBooks(query);
-        this.displaySearchResults(results);
+        try {
+          const results = await this.searchBooks(query);
+          console.debug(
+            `setupSearchHandler: received ${results.length} results`
+          );
+          this.displaySearchResults(results);
+        } catch (err) {
+          console.error("Error searching books:", err);
+        }
       }
     });
   }
@@ -167,8 +168,21 @@ class LibraryManager {
 
   addBook(bookData) {
     const book = new Book(bookData);
+    console.debug("addBook: preparing to add", bookData && bookData.title);
     this.books.push(book);
+    console.debug("addBook: books count after push", this.books.length);
     this.renderLibraryView();
+    // After adding a book, clear the search results and reset the search input
+    // so the search list closes and doesn't remain visible.
+    const searchResults = document.getElementById("searchResults");
+    if (searchResults) searchResults.innerHTML = "";
+    const searchInput = document.getElementById("searchInput");
+    if (searchInput) {
+      searchInput.value = "";
+      // remove focus from the input so any dropdown/UX closes
+      searchInput.blur();
+    }
+
     console.log(this.books);
   }
 
@@ -515,6 +529,12 @@ class LibraryManager {
   }
 
   renderLibraryView() {
+    const output = document.getElementById("output");
+    if (!output) {
+      console.error("#output element not found in DOM");
+      return;
+    }
+
     output.innerHTML = "";
     const libraryContainer = document.createElement("div");
     libraryContainer.classList.add("library-container");
@@ -537,6 +557,12 @@ class LibraryManager {
       return;
     }
 
+    const output = document.getElementById("output");
+    if (!output) {
+      console.error("#output element not found in DOM");
+      return;
+    }
+
     output.innerHTML = "";
     // Hide search form in book detail view
     document.querySelector(".search-container").classList.add("hidden");
@@ -547,4 +573,10 @@ class LibraryManager {
 }
 
 // Create an instance of LibraryManager
-const library = new LibraryManager();
+window.addEventListener("DOMContentLoaded", () => {
+  // instantiate after DOM is ready to avoid timing issues when this file is
+  // loaded as a module (and to ensure elements like #output exist)
+  const library = new LibraryManager();
+  // expose for debugging
+  window.library = library;
+});
