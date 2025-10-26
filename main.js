@@ -1,79 +1,17 @@
-import { Router } from "./js/router.js";
+import { Router } from "./js/services/router.js";
+import { Book } from "./js/models/book.js";
+import { BookService } from "./js/services/bookService.js";
+import { BookView } from "./js/views/bookView.js";
+
 // Book class. Creates book objects
-class Book {
-  constructor(bookData) {
-    this.title = bookData.title;
-    this.author = bookData.author;
-    this.id = crypto.randomUUID();
-    this.comments = []; // Array to store comments/passages
-    this.thumbnail = bookData.thumbnail || null;
-    this.description = bookData.description || "";
-    this.publishedDate = bookData.publishedDate || "";
-    this.pageCount = bookData.pageCount || null;
-    this.categories = bookData.categories || [];
-    this.isbn = bookData.isbn || null;
-  }
-
-  addComment(text, page = "", type = "note") {
-    const comment = {
-      id: crypto.randomUUID(),
-      text,
-      page,
-      type, // can be 'quote', 'note', 'insight', etc.
-      timestamp: new Date().toISOString(),
-    };
-    this.comments.push(comment);
-    return comment;
-  }
-
-  deleteComment(commentId) {
-    this.comments = this.comments.filter((comment) => comment.id !== commentId);
-  }
-
-  editComment(commentId, newText, newPage) {
-    const comment = this.comments.find((c) => c.id === commentId);
-    if (comment) {
-      comment.text = newText;
-      if (newPage !== undefined) comment.page = newPage;
-    }
-  }
-}
 
 class LibraryManager {
   constructor() {
     this.books = [];
     this.router = new Router();
+    this.bookService = new BookService();
     this.setupRoutes();
     this.setupSearchHandler();
-  }
-
-  async searchBooks(query) {
-    const response = await fetch(
-      `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(
-        query
-      )}`
-    );
-    const data = await response.json();
-    return data.items ? data.items.map(this.formatBookData) : [];
-  }
-
-  formatBookData(bookData) {
-    const volumeInfo = bookData.volumeInfo;
-    return {
-      title: volumeInfo.title,
-      author: volumeInfo.authors
-        ? volumeInfo.authors.join(", ")
-        : "Unknown Author",
-      thumbnail: volumeInfo.imageLinks ? volumeInfo.imageLinks.thumbnail : null,
-      description: volumeInfo.description,
-      publishedDate: volumeInfo.publishedDate,
-      pageCount: volumeInfo.pageCount,
-      categories: volumeInfo.categories,
-      isbn: volumeInfo.industryIdentifiers
-        ? volumeInfo.industryIdentifiers.find((id) => id.type === "ISBN_13")
-            ?.identifier
-        : null,
-    };
   }
 
   displaySearchResults(results) {
@@ -145,7 +83,7 @@ class LibraryManager {
       console.debug(`setupSearchHandler: submit with query='${query}'`);
       if (query) {
         try {
-          const results = await this.searchBooks(query);
+          const results = await this.bookService.searchBooks(query);
           console.debug(
             `setupSearchHandler: received ${results.length} results`
           );
