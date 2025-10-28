@@ -9,38 +9,6 @@ export class BookView {
     this.callbacks = { onAddBook, onDeleteBook, onEditBook, onNavigate };
   }
 
-  // Start with simple methods
-  createCommentForm() {
-    const form = document.createElement("form");
-    form.classList.add("comment-form");
-
-    const textArea = document.createElement("textarea");
-    textArea.placeholder = "Add a passage, quote, or note...";
-    textArea.classList.add("comment-input");
-
-    const pageInput = document.createElement("input");
-    pageInput.type = "text";
-    pageInput.placeholder = "Page number (optional)";
-    pageInput.classList.add("page-input");
-
-    const typeSelect = document.createElement("select");
-    typeSelect.classList.add("comment-type");
-    ["quote", "note", "insight"].forEach((type) => {
-      const option = document.createElement("option");
-      option.value = type;
-      option.textContent = type.charAt(0).toUpperCase() + type.slice(1);
-      typeSelect.appendChild(option);
-    });
-
-    const submitButton = document.createElement("button");
-    submitButton.type = "submit";
-    submitButton.textContent = "Save";
-    submitButton.classList.add("save-btn");
-
-    form.append(textArea, pageInput, typeSelect, submitButton);
-    return { form, textArea, pageInput, typeSelect };
-  }
-
   createDisplayContainer(book) {
     const displayContainer = document.createElement("div");
     displayContainer.classList.add("display-container");
@@ -145,7 +113,50 @@ export class BookView {
 
     return editContainer;
   }
+  createBookPreview(book) {
+    const previewElement = document.createElement("div");
+    previewElement.classList.add("book", "preview");
 
+    // Display container for title and author
+    const displayContainer = document.createElement("div");
+    displayContainer.classList.add("display-container");
+
+    const titleElement = document.createElement("h2");
+    titleElement.classList.add("book-title");
+    titleElement.textContent = book.title;
+
+    const authorElement = document.createElement("p");
+    authorElement.classList.add("book-author");
+    authorElement.textContent = `by ${book.author}`;
+
+    displayContainer.appendChild(titleElement);
+    displayContainer.appendChild(authorElement);
+
+    // Edit container (hidden by default)
+    const editContainer = this.createEditContainer(book, displayContainer);
+
+    // Buttons container
+    const buttonsContainer = this.createButtonsContainer(
+      book,
+      displayContainer,
+      editContainer
+    );
+
+    // View details button
+    const viewButton = document.createElement("button");
+    viewButton.textContent = "View Book Page";
+    viewButton.classList.add("view-btn");
+    viewButton.addEventListener("click", () => {
+      window.location.hash = `#book-${book.id}`;
+    });
+    buttonsContainer.appendChild(viewButton);
+
+    previewElement.appendChild(displayContainer);
+    previewElement.appendChild(editContainer);
+    previewElement.appendChild(buttonsContainer);
+
+    return previewElement;
+  }
   renderLibraryView(books, outputEl) {
     outputEl.innerHTML = "";
     const libraryContainer = document.createElement("div");
@@ -180,5 +191,31 @@ export class BookView {
     });
 
     outputEl.appendChild(libraryContainer);
+  }
+  handleSave(bookId, titleInput, authorInput) {
+    const newTitle = titleInput.value.trim();
+    const newAuthor = authorInput.value.trim();
+
+    if (newTitle && newAuthor) {
+      this.editBook(bookId, newTitle, newAuthor);
+    }
+  }
+
+  handleCancel(editContainer, displayContainer, book, titleInput, authorInput) {
+    displayContainer.classList.remove("hidden");
+    editContainer.classList.add("hidden");
+    titleInput.value = book.title;
+    authorInput.value = book.author;
+  }
+
+  handleEdit(displayContainer, editContainer) {
+    displayContainer.classList.add("hidden");
+    editContainer.classList.remove("hidden");
+  }
+
+  handleDelete(bookId) {
+    if (confirm("Are you sure you want to delete this book?")) {
+      this.deleteBook(bookId);
+    }
   }
 }
