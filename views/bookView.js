@@ -79,7 +79,6 @@ export class BookView {
     buttonsContainer.appendChild(viewButton);
 
     previewElement.appendChild(displayContainer);
-    previewElement.appendChild(editContainer);
     previewElement.appendChild(buttonsContainer);
 
     return previewElement;
