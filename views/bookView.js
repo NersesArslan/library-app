@@ -3,10 +3,9 @@ export class BookView {
   constructor({
     onAddBook = () => {},
     onDeleteBook = () => {},
-    onEditBook = () => {},
     onNavigate = () => {},
   } = {}) {
-    this.callbacks = { onAddBook, onDeleteBook, onEditBook, onNavigate };
+    this.callbacks = { onAddBook, onDeleteBook, onNavigate };
   }
 
   createDisplayContainer(book) {
@@ -28,23 +27,13 @@ export class BookView {
   }
 
   // Methods that need callbacks
-  createButtonsContainer(book, displayContainer, editContainer) {
+  createButtonsContainer(book) {
     const buttonsContainer = document.createElement("div");
     buttonsContainer.classList.add("buttons-container");
-
-    const editButton = document.createElement("button");
-    editButton.textContent = "Edit";
-    editButton.classList.add("edit-btn");
 
     const deleteButton = document.createElement("button");
     deleteButton.textContent = "Delete";
     deleteButton.classList.add("delete-btn");
-
-    // Add event listeners
-    editButton.addEventListener("click", () => {
-      displayContainer.classList.add("hidden");
-      editContainer.classList.remove("hidden");
-    });
 
     // Delete calls back to the manager
     deleteButton.addEventListener("click", () => {
@@ -53,66 +42,11 @@ export class BookView {
       }
     });
 
-    buttonsContainer.appendChild(editButton);
     buttonsContainer.appendChild(deleteButton);
 
     return buttonsContainer;
   }
 
-  createEditContainer(book, displayContainer) {
-    const editContainer = document.createElement("div");
-    editContainer.classList.add("edit-container", "hidden");
-
-    const titleInput = document.createElement("input");
-    titleInput.type = "text";
-    titleInput.value = book.title;
-    titleInput.classList.add("edit-title");
-
-    const authorInput = document.createElement("input");
-    authorInput.type = "text";
-    authorInput.value = book.author;
-    authorInput.classList.add("edit-author");
-
-    const saveButton = document.createElement("button");
-    saveButton.textContent = "Save";
-    saveButton.classList.add("save-btn");
-
-    const cancelButton = document.createElement("button");
-    cancelButton.textContent = "Cancel";
-    cancelButton.classList.add("cancel-btn");
-
-    saveButton.addEventListener("click", () => {
-      const newTitle = titleInput.value.trim();
-      const newAuthor = authorInput.value.trim();
-      if (!newTitle || !newAuthor) {
-        alert("Title and author are required.");
-        return;
-      }
-      // Tell LibraryManager to persist the change
-      this.callbacks.onEditBook(book.id, newTitle, newAuthor);
-      // Optimistically update UI and toggle back
-      const titleEl = displayContainer.querySelector(".book-title");
-      const authorEl = displayContainer.querySelector(".book-author");
-      if (titleEl) titleEl.textContent = newTitle;
-      if (authorEl) authorEl.textContent = `by ${newAuthor}`;
-      editContainer.classList.add("hidden");
-      displayContainer.classList.remove("hidden");
-    });
-
-    cancelButton.addEventListener("click", () => {
-      titleInput.value = book.title;
-      authorInput.value = book.author;
-      editContainer.classList.add("hidden");
-      displayContainer.classList.remove("hidden");
-    });
-
-    editContainer.appendChild(titleInput);
-    editContainer.appendChild(authorInput);
-    editContainer.appendChild(saveButton);
-    editContainer.appendChild(cancelButton);
-
-    return editContainer;
-  }
   createBookPreview(book) {
     const previewElement = document.createElement("div");
     previewElement.classList.add("book", "preview");
@@ -132,15 +66,8 @@ export class BookView {
     displayContainer.appendChild(titleElement);
     displayContainer.appendChild(authorElement);
 
-    // Edit container (hidden by default)
-    const editContainer = this.createEditContainer(book, displayContainer);
-
     // Buttons container
-    const buttonsContainer = this.createButtonsContainer(
-      book,
-      displayContainer,
-      editContainer
-    );
+    const buttonsContainer = this.createButtonsContainer(book);
 
     // View details button
     const viewButton = document.createElement("button");
@@ -167,12 +94,7 @@ export class BookView {
       preview.classList.add("book", "preview");
 
       const displayContainer = this.createDisplayContainer(book);
-      const editContainer = this.createEditContainer(book, displayContainer);
-      const buttons = this.createButtonsContainer(
-        book,
-        displayContainer,
-        editContainer
-      );
+      const buttons = this.createButtonsContainer(book);
 
       // Add a "View Book Page" button (use onNavigate callback)
       const viewBtn = document.createElement("button");
@@ -184,38 +106,11 @@ export class BookView {
       buttons.appendChild(viewBtn);
 
       preview.appendChild(displayContainer);
-      preview.appendChild(editContainer);
       preview.appendChild(buttons);
 
       libraryContainer.appendChild(preview);
     });
 
     outputEl.appendChild(libraryContainer);
-  }
-  handleSave(bookId, titleInput, authorInput) {
-    const newTitle = titleInput.value.trim();
-    const newAuthor = authorInput.value.trim();
-
-    if (newTitle && newAuthor) {
-      this.editBook(bookId, newTitle, newAuthor);
-    }
-  }
-
-  handleCancel(editContainer, displayContainer, book, titleInput, authorInput) {
-    displayContainer.classList.remove("hidden");
-    editContainer.classList.add("hidden");
-    titleInput.value = book.title;
-    authorInput.value = book.author;
-  }
-
-  handleEdit(displayContainer, editContainer) {
-    displayContainer.classList.add("hidden");
-    editContainer.classList.remove("hidden");
-  }
-
-  handleDelete(bookId) {
-    if (confirm("Are you sure you want to delete this book?")) {
-      this.deleteBook(bookId);
-    }
   }
 }
