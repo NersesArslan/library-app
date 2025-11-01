@@ -1,6 +1,8 @@
+// Updated LibraryManager.js with backend integration
 import { Router } from "../services/router.js";
 import { Book } from "../models/book.js";
 import { BookService } from "../services/bookService.js";
+import { ApiService } from "../services/apiService.js";
 import { BookView } from "../views/bookView.js";
 import { SearchView } from "../views/searchView.js";
 import { CommentView } from "../views/commentView.js";
@@ -10,6 +12,8 @@ export class LibraryManager {
     this.books = [];
     this.router = new Router();
     this.bookService = new BookService();
+    this.apiService = new ApiService(); // NEW: API service
+
     this.bookView = new BookView({
       onAddBook: (data) => this.addBook(data),
       onDeleteBook: (id) => this.deleteBook(id),
@@ -17,7 +21,6 @@ export class LibraryManager {
       onNavigate: (path) => this.router.navigate(path),
     });
 
-    // Instantiate views with their callbacks
     this.searchView = new SearchView({
       onAddBook: (data) => this.addBook(data),
     });
@@ -26,8 +29,28 @@ export class LibraryManager {
       onNavigate: (path) => this.router.navigate(path),
       onRenderBook: (id) => this.renderBookView(id),
     });
+
     this.setupRoutes();
     this.setupSearchHandler();
+    this.loadBooks(); // NEW: Load books from backend on init
+  }
+
+  // NEW: Load all books from backend
+  async loadBooks() {
+    try {
+      const booksData = await this.apiService.getAllBooks();
+      this.books = booksData.map((data) => {
+        const book = new Book(data);
+        book.id = data.id; // Use existing ID from database
+        book.comments = data.comments || [];
+        return book;
+      });
+      this.renderLibraryView();
+    } catch (error) {
+      console.error("Error loading books:", error);
+      // Show error message to user
+      this.showError("Failed to load your library. Please refresh the page.");
+    }
   }
 
   setupSearchHandler() {
@@ -54,7 +77,6 @@ export class LibraryManager {
           console.debug(
             `setupSearchHandler: received ${results.length} results`
           );
-          // delegate rendering to the SearchView
           this.searchView.displaySearchResults(results);
         } catch (err) {
           console.error("Error searching books:", err);
@@ -67,44 +89,70 @@ export class LibraryManager {
     this.router.addRoute("#library", () => this.renderLibraryView());
     this.router.addRoute("#book", (id) => this.renderBookView(id));
 
-    // Handle initial route
     const hash = window.location.hash || "#library";
     this.router.handleRoute(hash);
   }
 
-  addBook(bookData) {
-    const book = new Book(bookData);
-    console.debug("addBook: preparing to add", bookData && bookData.title);
-    this.books.push(book);
-    console.debug("addBook: books count after push", this.books.length);
-    this.renderLibraryView();
-    // After adding a book, clear the search results and reset the search input
-    // so the search list closes and doesn't remain visible.
-    const searchResults = document.getElementById("searchResults");
-    if (searchResults) searchResults.innerHTML = "";
-    const searchInput = document.getElementById("searchInput");
-    if (searchInput) {
-      searchInput.value = "";
-      // remove focus from the input so any dropdown/UX closes
-      searchInput.blur();
-    }
+  // UPDATED: Save book to backend
+  async addBook(bookData) {
+    try {
+      const book = new Book(bookData);
+      console.debug("addBook: preparing to add", bookData && bookData.title);
 
-    console.log(this.books);
-  }
+      // Save to backend first
+      const savedBook = await this.apiService.addBook(book);
 
-  deleteBook(id) {
-    this.books = this.books.filter((book) => book.id !== id);
-    this.renderLibraryView();
-  }
+      // Update local state with backend data
+      book.id = savedBook.id; // Ensure we use the backend ID
+      this.books.push(book);
 
-  editBook(id, newTitle, newAuthor) {
-    const book = this.books.find((book) => book.id === id);
-    if (book) {
-      book.title = newTitle;
-      book.author = newAuthor;
+      console.debug("addBook: books count after push", this.books.length);
       this.renderLibraryView();
+
+      // Clear search results
+      const searchResults = document.getElementById("searchResults");
+      if (searchResults) searchResults.innerHTML = "";
+      const searchInput = document.getElementById("searchInput");
+      if (searchInput) {
+        searchInput.value = "";
+        searchInput.blur();
+      }
+
+      console.log(this.books);
+    } catch (error) {
+      console.error("Error adding book:", error);
+      this.showError("Failed to add book. Please try again.");
     }
   }
+
+  // UPDATED: Delete book from backend
+  async deleteBook(id) {
+    try {
+      await this.apiService.deleteBook(id);
+      this.books = this.books.filter((book) => book.id !== id);
+      this.renderLibraryView();
+    } catch (error) {
+      console.error("Error deleting book:", error);
+      this.showError("Failed to delete book. Please try again.");
+    }
+  }
+
+  // UPDATED: Update book in backend
+  async editBook(id, newTitle, newAuthor) {
+    try {
+      await this.apiService.updateBook(id, newTitle, newAuthor);
+      const book = this.books.find((book) => book.id === id);
+      if (book) {
+        book.title = newTitle;
+        book.author = newAuthor;
+        this.renderLibraryView();
+      }
+    } catch (error) {
+      console.error("Error editing book:", error);
+      this.showError("Failed to update book. Please try again.");
+    }
+  }
+
   renderLibraryView() {
     const output = document.getElementById("output");
     if (!output) {
@@ -112,15 +160,13 @@ export class LibraryManager {
       return;
     }
 
-    // Manager still controls whether search form is visible
     const searchContainer = document.querySelector(".search-container");
     if (searchContainer) searchContainer.classList.remove("hidden");
 
-    // Delegate rendering to the view
     this.bookView.renderLibraryView(this.books, output);
   }
 
-  renderBookView(bookId) {
+  async renderBookView(bookId) {
     const book = this.books.find((book) => book.id === bookId);
     if (!book) {
       this.router.navigate("#library");
@@ -134,11 +180,25 @@ export class LibraryManager {
     }
 
     output.innerHTML = "";
-    // Hide search form in book detail view
     const searchContainer = document.querySelector(".search-container");
     if (searchContainer) searchContainer.classList.add("hidden");
 
     const detailView = this.commentView.createDetailView(book);
     output.appendChild(detailView);
+  }
+
+  // NEW: Show error messages to user
+  showError(message) {
+    const output = document.getElementById("output");
+    if (!output) return;
+
+    const errorDiv = document.createElement("div");
+    errorDiv.className = "error-message";
+    errorDiv.textContent = message;
+    errorDiv.style.cssText =
+      "background: #fee; color: #c00; padding: 1rem; margin: 1rem; border-radius: 4px;";
+
+    output.prepend(errorDiv);
+    setTimeout(() => errorDiv.remove(), 5000);
   }
 }
