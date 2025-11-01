@@ -4,7 +4,7 @@
 export class ApiService {
   constructor() {
     // Update this URL based on your deployment
-    this.baseURL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
+    this.baseURL = "http://localhost:3000/api";
   }
 
   async request(endpoint, options = {}) {
