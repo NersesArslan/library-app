@@ -74,10 +74,15 @@ export class CommentView {
     const deleteBtn = document.createElement("button");
     deleteBtn.textContent = "Delete";
     deleteBtn.classList.add("delete-btn");
-    deleteBtn.addEventListener("click", () => {
+    deleteBtn.addEventListener("click", async () => {
       if (confirm("Delete this comment?")) {
-        book.deleteComment(comment.id);
-        this.callbacks.onRenderBook(book.id);
+        try {
+          await book.deleteComment(comment.id); // ADDED: await
+          this.callbacks.onRenderBook(book.id);
+        } catch (error) {
+          console.error("Error deleting comment:", error);
+          alert("Failed to delete comment. Please try again.");
+        }
       }
     });
 
@@ -121,15 +126,22 @@ export class CommentView {
 
     // Add comment form
     const { form, textArea, pageInput, typeSelect } = this.createCommentForm();
-    form.addEventListener("submit", (e) => {
+    form.addEventListener("submit", async (e) => {
+      // ADDED: async
       e.preventDefault();
       if (textArea.value.trim()) {
-        book.addComment(
-          textArea.value.trim(),
-          pageInput.value.trim(),
-          typeSelect.value
-        );
-        this.callbacks.onRenderBook(book.id);
+        try {
+          await book.addComment(
+            // ADDED: await
+            textArea.value.trim(),
+            pageInput.value.trim(),
+            typeSelect.value
+          );
+          this.callbacks.onRenderBook(book.id);
+        } catch (error) {
+          console.error("Error adding comment:", error);
+          alert("Failed to add comment. Please try again.");
+        }
       }
     });
 

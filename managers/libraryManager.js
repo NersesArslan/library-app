@@ -167,26 +167,41 @@ export class LibraryManager {
   }
 
   async renderBookView(bookId) {
-    const book = this.books.find((book) => book.id === bookId);
-    if (!book) {
-      this.router.navigate("#library");
-      return;
+    try {
+      const bookData = await this.apiService.getBook(bookId);
+      if (!bookData) {
+        this.router.navigate("#library");
+        return;
+      }
+
+      // Convert plain object to Book instance
+      const book = new Book(bookData);
+      book.id = bookData.id; // Preserve the ID
+      book.comments = bookData.comments || []; // Preserve comments
+
+      // Map created_at to timestamp for all comments
+      book.comments = (bookData.comments || []).map((comment) => ({
+        ...comment,
+        timestamp: comment.timestamp || comment.created_at,
+      }));
+
+      const output = document.getElementById("output");
+      if (!output) {
+        console.error("#output element not found in DOM");
+        return;
+      }
+
+      output.innerHTML = "";
+      const searchContainer = document.querySelector(".search-container");
+      if (searchContainer) searchContainer.classList.add("hidden");
+
+      const detailView = this.commentView.createDetailView(book);
+      output.appendChild(detailView);
+    } catch (error) {
+      console.error("Error rendering book view:", error);
+      this.showError("Failed to load book details.");
     }
-
-    const output = document.getElementById("output");
-    if (!output) {
-      console.error("#output element not found in DOM");
-      return;
-    }
-
-    output.innerHTML = "";
-    const searchContainer = document.querySelector(".search-container");
-    if (searchContainer) searchContainer.classList.add("hidden");
-
-    const detailView = this.commentView.createDetailView(book);
-    output.appendChild(detailView);
   }
-
   // NEW: Show error messages to user
   showError(message) {
     const output = document.getElementById("output");
