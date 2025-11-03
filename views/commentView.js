@@ -8,7 +8,7 @@ export class CommentView {
     form.classList.add("comment-form");
 
     const textArea = document.createElement("textarea");
-    textArea.placeholder = "Add a passage, quote, or note...";
+    textArea.placeholder = "Add a quote";
     textArea.classList.add("comment-input");
 
     const pageInput = document.createElement("input");
@@ -18,7 +18,7 @@ export class CommentView {
 
     const typeSelect = document.createElement("select");
     typeSelect.classList.add("comment-type");
-    ["quote", "note", "insight"].forEach((type) => {
+    ["quote"].forEach((type) => {
       const option = document.createElement("option");
       option.value = type;
       option.textContent = type.charAt(0).toUpperCase() + type.slice(1);
@@ -74,18 +74,17 @@ export class CommentView {
     const deleteBtn = document.createElement("button");
     deleteBtn.textContent = "Delete";
     deleteBtn.classList.add("delete-btn");
-    deleteBtn.addEventListener("click", async () => {
-      if (confirm("Delete this comment?")) {
+    deleteBtn.addEventListener("click", () => {
+      this.showDeleteModal(async () => {
         try {
-          await book.deleteComment(comment.id); // ADDED: await
+          await book.deleteComment(comment.id);
           this.callbacks.onRenderBook(book.id);
         } catch (error) {
           console.error("Error deleting comment:", error);
           alert("Failed to delete comment. Please try again.");
         }
-      }
+      });
     });
-
     actions.append(editBtn, deleteBtn);
     commentElement.append(header, content, actions);
     return commentElement;
@@ -121,7 +120,7 @@ export class CommentView {
     commentsSection.classList.add("comments-section");
 
     const commentsHeader = document.createElement("h3");
-    commentsHeader.textContent = "Passages & Notes";
+    commentsHeader.textContent = "";
     commentsHeader.classList.add("comments-header");
 
     // Add comment form
@@ -162,6 +161,12 @@ export class CommentView {
   }
 
   editComment(comment, commentElement, book) {
+    const modal = document.createElement("div");
+    modal.classList.add("modal-overlay");
+
+    const modalContent = document.createElement("div");
+    modalContent.classList.add("modal-content");
+
     const { form, textArea, pageInput } = this.createCommentForm();
     textArea.value = comment.text;
     pageInput.value = comment.page || "";
@@ -171,16 +176,67 @@ export class CommentView {
     cancelBtn.classList.add("cancel-btn");
     cancelBtn.addEventListener("click", (e) => {
       e.preventDefault();
-      this.callbacks.onRenderBook(book.id);
+      modal.remove();
     });
 
     form.appendChild(cancelBtn);
-    commentElement.replaceWith(form);
+    modalContent.appendChild(form);
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
 
-    form.addEventListener("submit", (e) => {
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      book.editComment(comment.id, textArea.value, pageInput.value);
-      this.callbacks.onRenderBook(book.id);
+      try {
+        await book.editComment(comment.id, textArea.value, pageInput.value);
+        modal.remove(); // Close modal
+        this.callbacks.onRenderBook(book.id);
+      } catch (error) {
+        console.error("Error editing comment:", error);
+        alert("Failed to edit comment. Please try again.");
+      }
+    });
+  }
+
+  showDeleteModal(onConfirm) {
+    // Create modal overlay
+    const modal = document.createElement("div");
+    modal.classList.add("modal-overlay");
+
+    const modalContent = document.createElement("div");
+    modalContent.classList.add("modal-content", "delete-modal");
+
+    const message = document.createElement("p");
+    message.textContent = "Are you sure you want to delete this comment?";
+    message.style.marginBottom = "1.5rem";
+
+    const buttonContainer = document.createElement("div");
+    buttonContainer.style.display = "flex";
+    buttonContainer.style.gap = "1rem";
+    buttonContainer.style.justifyContent = "center";
+
+    const confirmBtn = document.createElement("button");
+    confirmBtn.textContent = "Delete";
+    confirmBtn.classList.add("delete-btn");
+    confirmBtn.addEventListener("click", () => {
+      modal.remove();
+      onConfirm();
+    });
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.textContent = "Cancel";
+    cancelBtn.classList.add("cancel-btn");
+    cancelBtn.addEventListener("click", () => {
+      modal.remove();
+    });
+
+    buttonContainer.append(cancelBtn, confirmBtn);
+    modalContent.append(message, buttonContainer);
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+
+    // Close on overlay click
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) modal.remove();
     });
   }
 }

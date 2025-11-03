@@ -12,15 +12,45 @@ export class BookView {
     const displayContainer = document.createElement("div");
     displayContainer.classList.add("display-container");
 
-    const headerElement = document.createElement("h1");
-    headerElement.classList.add("book-title");
-    headerElement.textContent = book.title;
+    if (book.thumbnail) {
+      const img = document.createElement("img");
+      img.src = book.thumbnail;
+      img.alt = book.title;
+      img.classList.add("book-thumbnail");
+      displayContainer.appendChild(img);
+    }
 
+    const titleContainer = document.createElement("div");
+    titleContainer.classList.add("title-container");
+
+    const title = document.createElement("h3");
+    title.textContent = book.title;
+    title.classList.add("book-title");
+
+    if (book.title.length > 40) {
+      title.classList.add("truncated");
+
+      const showMoreBtn = document.createElement("button");
+      showMoreBtn.textContent = "Show more";
+      showMoreBtn.classList.add("show-more-btn");
+
+      showMoreBtn.addEventListener("click", (e) => {
+        e.stopPropagation(); // Don't trigger card click
+        title.classList.toggle("truncated");
+        showMoreBtn.textContent = title.classList.contains("truncated")
+          ? "Show more"
+          : "Show less";
+      });
+
+      titleContainer.append(title, showMoreBtn);
+    } else {
+      titleContainer.appendChild(title);
+    }
     const authorElement = document.createElement("h2");
     authorElement.classList.add("book-author");
     authorElement.textContent = book.author;
 
-    displayContainer.appendChild(headerElement);
+    displayContainer.appendChild(titleContainer);
     displayContainer.appendChild(authorElement);
 
     return displayContainer;
@@ -37,9 +67,12 @@ export class BookView {
 
     // Delete calls back to the manager
     deleteButton.addEventListener("click", () => {
-      if (confirm("Are you sure you want to delete this book?")) {
-        this.callbacks.onDeleteBook(book.id);
-      }
+      this.showDeleteModal(
+        `Are you sure you want to delete "${book.title}"? This will also delete all its quotes.`,
+        () => {
+          this.callbacks.onDeleteBook(book.id);
+        }
+      );
     });
 
     buttonsContainer.appendChild(deleteButton);
@@ -111,5 +144,48 @@ export class BookView {
     });
 
     outputEl.appendChild(libraryContainer);
+  }
+
+  showDeleteModal(message, onConfirm) {
+    // Create modal overlay
+    const modal = document.createElement("div");
+    modal.classList.add("modal-overlay");
+
+    const modalContent = document.createElement("div");
+    modalContent.classList.add("modal-content", "delete-modal");
+
+    const messageEl = document.createElement("p");
+    messageEl.textContent = message;
+    messageEl.style.marginBottom = "1.5rem";
+
+    const buttonContainer = document.createElement("div");
+    buttonContainer.style.display = "flex";
+    buttonContainer.style.gap = "1rem";
+    buttonContainer.style.justifyContent = "center";
+
+    const confirmBtn = document.createElement("button");
+    confirmBtn.textContent = "Delete";
+    confirmBtn.classList.add("delete-btn");
+    confirmBtn.addEventListener("click", () => {
+      modal.remove();
+      onConfirm();
+    });
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.textContent = "Cancel";
+    cancelBtn.classList.add("cancel-btn");
+    cancelBtn.addEventListener("click", () => {
+      modal.remove();
+    });
+
+    buttonContainer.append(cancelBtn, confirmBtn);
+    modalContent.append(messageEl, buttonContainer);
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+
+    // Close on overlay click
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) modal.remove();
+    });
   }
 }
