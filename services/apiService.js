@@ -10,7 +10,7 @@ export class ApiService {
     // Update this URL based on your deployment
     this.baseURL = isLocal
       ? "http://localhost:3000/api" // Local backend
-      : "http://https://library-app-backend-x6z5.onrender.com/api";
+      : "https://library-app-backend-x6z5.onrender.com/api";
   }
 
   async request(endpoint, options = {}) {
