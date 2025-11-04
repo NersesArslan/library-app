@@ -3,8 +3,14 @@
 
 export class ApiService {
   constructor() {
+    // Check if we're on localhost or deployed
+    const isLocal =
+      window.location.hostname === "localhost" ||
+      window.location.hostname === "127.0.0.1";
     // Update this URL based on your deployment
-    this.baseURL = "http://localhost:3000/api";
+    this.baseURL = isLocal
+      ? "http://localhost:3000/api" // Local backend
+      : "http://https://library-app-backend-x6z5.onrender.com/api";
   }
 
   async request(endpoint, options = {}) {
